@@ -1,0 +1,91 @@
+{% extends 'core/base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<div class="mb-3 d-flex align-items-center gap-3">
+  <!-- Avatar -->
+  <img src="{{ profile.avatar_url }}" class="rounded-circle bg-secondary"
+       style="width:100px;height:100px;object-fit:cover;" alt="@{{ profile_user.username }}">
+
+  <!-- User info -->
+  <div>
+    <h4 class="mb-1">@{{ profile_user.username }}</h4>
+    <div class="d-flex gap-3 mb-2">
+      <span><strong>{{ stats.posts }}</strong> posts</span>
+      <span><strong>{{ stats.followers }}</strong> followers</span>
+      <span><strong>{{ stats.following }}</strong> following</span>
+    </div>
+
+    {% if request.user != profile_user %}
+      <button class="btn btn-sm btn-outline-primary follow-btn"
+              data-username="{{ profile_user.username }}">
+        {% if is_following %}Unfollow{% else %}Follow{% endif %}
+      </button>
+      <a class="btn btn-sm btn-secondary" href="{% url 'start_thread' profile_user.username %}">Message</a>
+    {% else %}
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'profile_edit' profile_user.username %}">Edit profile</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Tabs for Photos / Videos -->
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#photos">Photos</button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#videos">Videos</button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <!-- Photos tab -->
+  <div class="tab-pane fade show active" id="photos">
+    {% if photos %}
+      <div class="grid">
+        {% for p in photos %}
+          <div class="tile position-relative">
+            <div class="post-media">
+              <img src="{{ p.media.url }}" alt="">
+            </div>
+            {% if request.user == profile_user %}
+              <form method="post" action="{% url 'post_delete' p.id %}"
+                    class="position-absolute top-0 end-0 m-2"
+                    onsubmit="return confirm('Delete this photo?');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">No photos yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Videos tab -->
+  <div class="tab-pane fade" id="videos">
+    {% if videos %}
+      <div class="grid">
+        {% for v in videos %}
+          <div class="tile position-relative">
+            <div class="post-media">
+              <video src="{{ v.media.url }}" muted autoplay loop playsinline></video>
+            </div>
+            {% if request.user == profile_user %}
+              <form method="post" action="{% url 'post_delete' v.id %}"
+                    class="position-absolute top-0 end-0 m-2"
+                    onsubmit="return confirm('Delete this video?');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">No videos yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

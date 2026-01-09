@@ -1,0 +1,31 @@
+{% extends 'core/base.html' %}
+{% block title %}Reels{% endblock %}
+{% block content %}
+<div class="row g-3">
+  {% for r in reels %}
+    <div class="col-md-4">
+      <div class="reel position-relative bg-dark rounded overflow-hidden">
+        <!-- Reel video -->
+        <video src="{{ r.media.url }}" autoplay muted loop playsinline
+               controls class="w-100" style="aspect-ratio: 9/16; object-fit: cover;"></video>
+
+        <!-- Overlay info -->
+        <div class="reel-info position-absolute bottom-0 start-0 w-100 text-white p-2 bg-gradient">
+          <p class="mb-1">
+            <strong>@{{ r.author.username }}</strong>
+            {% if r.caption %} – {{ r.caption|truncatechars:80 }}{% endif %}
+          </p>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-light like-btn" data-post="{{ r.id }}">
+              ❤️ <span class="like-count">{{ r.likes.count }}</span>
+            </button>
+            <a class="btn btn-sm btn-outline-light" href="{% url 'profile' r.author.username %}">View profile</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">No reels yet. Upload a video to get started.</p>
+  {% endfor %}
+</div>
+{% endblock %}

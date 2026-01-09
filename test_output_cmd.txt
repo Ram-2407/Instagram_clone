@@ -1,0 +1,18 @@
+Creating test database for alias 'default'...
+.....F.........
+======================================================================
+FAIL: test_profile_creation (core.tests.ModelTests.test_profile_creation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\RAM\M7 digitals\instagram_co\insta\core\tests.py", line 16, in test_profile_creation
+    self.assertTrue(created)
+    ~~~~~~~~~~~~~~~^^^^^^^^^
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 15 tests in 22.244s
+
+FAILED (failures=1)
+Destroying test database for alias 'default'...
+Found 15 test(s).
+System check identified no issues (0 silenced).

@@ -1,0 +1,29 @@
+{% extends 'core/base.html' %}
+{% block title %}Add Story{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 480px;">
+  <div class="card p-4 shadow-sm">
+    <h4 class="mb-3">Add a Story</h4>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- File input -->
+      <div class="mb-3">
+        {{ form.media.label_tag }}
+        {{ form.media }}
+        <small class="form-text text-muted">
+          Upload an image or video. Stories expire after 24 hours.
+        </small>
+      </div>
+
+      <!-- Upload button -->
+      <button type="submit" class="btn btn-primary w-100">Upload Story</button>
+    </form>
+
+    <!-- Back link -->
+    <div class="mt-3 text-center">
+      <a href="{% url 'home' %}" class="btn btn-link">← Back to Home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

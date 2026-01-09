@@ -1,0 +1,259 @@
+{% extends 'core/base.html' %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<div class="row">
+  <!-- Left column: Threads -->
+  <div class="col-12 text-center mb-3">
+    <form method="get" action="{% url 'messages' %}" class="mx-auto" style="max-width:600px;">
+      <input id="threadSearch" name="q" value="{{ q }}" class="form-control text-center" placeholder="Search users...">
+    </form>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5 class="mb-3">Inbox</h5>
+
+      <!-- Thread list -->
+      {% if not q %}
+        <div id="threadList">
+          {% for t in threads %}
+            <a class="d-block mb-2 thread-item {% if selected_thread and t.id == selected_thread.id %}fw-bold{% endif %}"
+               href="{% url 'messages' %}?t={{ t.id }}">
+              {% for u in t.participants.all %}
+                {% if u != request.user %}
+                  <div class="d-flex align-items-center gap-2">
+                    <img src="{{ u.profile.avatar_url }}" class="rounded-circle"
+                         style="width:32px;height:32px;object-fit:cover;" alt="@{{ u.username }}">
+                    <span>@{{ u.username }}</span>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </a>
+          {% empty %}
+            <p class="text-muted">No threads yet.</p>
+          {% endfor %}
+        </div>
+      {% else %}
+        <!-- Search results -->
+        <div id="threadResults">
+          {% if results %}
+            {% for u in results %}
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <img src="{{ u.profile.avatar_url }}" class="rounded-circle"
+                     style="width:32px;height:32px;object-fit:cover;" alt="@{{ u.username }}">
+                <span>@{{ u.username }}</span>
+                <a class="btn btn-sm btn-primary ms-auto" href="{% url 'start_thread' u.username %}">Message</a>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted">No users found.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Chat window -->
+  <div class="col-md-8">
+    <div class="card p-3">
+      {% if selected_thread %}
+        <!-- Chat header: show partner profile -->
+        {% if chat_partner %}
+          <div class="d-flex align-items-center mb-2">
+            <img src="{{ chat_partner.profile.avatar_url }}" class="rounded-circle me-2" style="width:40px;height:40px;object-fit:cover;">
+            <div>
+              <strong>@{{ chat_partner.username }}</strong>
+            </div>
+          </div>
+        {% endif %}
+        <div id="messages" class="border rounded p-2 messages-box" style="height:60vh; overflow-y:auto;">
+          {% for m in chat_messages %}
+            {% if m.sender.id == request.user.id %}
+              <div class="msg-row me mb-2">
+            {% else %}
+              <div class="msg-row them mb-2">
+            {% endif %}
+                <img src="{{ m.sender.profile.avatar_url }}" class="msg-avatar rounded-circle" alt="@{{ m.sender.username }}">
+                <div class="msg-bubble">
+                  {% if m.sender.id != request.user.id %}<div class="msg-from"><strong>@{{ m.sender.username }}</strong></div>{% endif %}
+                  {% if m.text %}
+                    <div class="msg-text">{{ m.text }}</div>
+                  {% endif %}
+                  {% if m.attachment %}
+                    {% if '.mp4' in m.attachment.url|lower or '.webm' in m.attachment.url|lower or '.mov' in m.attachment.url|lower %}
+                      <video class="msg-media" src="{{ m.attachment.url }}" controls playsinline></video>
+                    {% else %}
+                      <img class="msg-media" src="{{ m.attachment.url }}" alt="attachment">
+                    {% endif %}
+                  {% endif %}
+                  <div class="msg-meta"><small class="text-muted">{{ m.created_at|date:"M d, H:i" }}</small></div>
+                </div>
+              </div>
+          {% endfor %}
+        </div>
+
+        <script>
+          // scroll messages container to bottom on load
+          (function(){
+            const box = document.getElementById('messages');
+            if(box) box.scrollTop = box.scrollHeight;
+          })();
+        </script>
+
+        <!-- Message input with attachment -->
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <label class="btn btn-outline-secondary mb-0" for="fileInput">📎</label>
+          <input id="fileInput" type="file" class="d-none">
+          <input id="chatInput" class="form-control" placeholder="Message...">
+          <button id="sendBtn" class="btn btn-primary">Send</button>
+        </div>
+
+        <!-- WebSocket logic -->
+        <script>
+          const threadId = "{{ selected_thread.id }}";
+          const wsScheme = location.protocol === "https:" ? "wss" : "ws";
+          const chatSocket = new WebSocket(`${wsScheme}://${location.host}/ws/chat/${threadId}/`);
+          let socketOpen = false;
+          chatSocket.onopen = () => { socketOpen = true; };
+          chatSocket.onerror = (err) => { console.error('Chat socket error', err); };
+
+          // helper to read CSRF cookie
+          function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+                }
+              }
+            }
+            return cookieValue;
+          }
+
+          chatSocket.onmessage = (e) => {
+            const d = JSON.parse(e.data);
+            appendMessage(d.sender, d.text, d.created_at, d.attachment_url);
+          };
+          chatSocket.onclose = () => console.warn('Socket closed');
+
+          document.getElementById('sendBtn').onclick = () => {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+              uploadFile(file, text);
+              document.getElementById('fileInput').value = '';
+              input.value = '';
+              return;
+            }
+            if (!text) return;
+            // If WS is open, send via socket; otherwise fallback to upload endpoint (POST)
+            if (socketOpen && chatSocket.readyState === WebSocket.OPEN) {
+              try {
+                chatSocket.send(JSON.stringify({ text }));
+              } catch (e) {
+                // fallback to HTTP if send fails
+                fetchMessageFallback(text);
+              }
+            } else {
+              fetchMessageFallback(text);
+            }
+            input.value = '';
+          };
+
+          // file upload handler
+          function uploadFile(file, text) {
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('thread_id', threadId);
+            if (text) fd.append('text', text);
+            fetch("{% url 'message_upload' %}", {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {'X-CSRFToken': getCookie('csrftoken')},
+              body: fd
+            }).then(r=>r.json()).then(d=>{
+              appendMessage(d.sender, d.text, d.created_at, d.attachment_url);
+            }).catch(()=>{});
+          }
+
+          // Fallback to POST for plain text when websocket unavailable
+          function fetchMessageFallback(text) {
+            const fd = new FormData();
+            fd.append('text', text);
+            fd.append('thread_id', threadId);
+            fetch("{% url 'message_upload' %}", {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: {'X-CSRFToken': getCookie('csrftoken')},
+              body: fd
+            }).then(r=>r.json()).then(d=>{
+              appendMessage(d.sender, d.text, d.created_at, d.attachment_url);
+            }).catch(err=>{ console.error('Fallback send failed', err); });
+          }
+
+          function appendMessage(sender, text, createdAt, attachmentUrl) {
+            const me = sender === "{{ request.user.username }}";
+            const row = document.createElement('div');
+            row.className = 'msg-row ' + (me ? 'me' : 'them');
+            const avatar = document.createElement('img');
+            avatar.className = 'msg-avatar rounded-circle';
+            // Use the same avatar logic as the server-rendered messages:
+            // - current user: their profile avatar (with built-in default)
+            // - other user: chat partner's avatar (also falls back to default)
+            avatar.src = me 
+              ? "{{ request.user.profile.avatar_url }}"
+              : "{% if chat_partner %}{{ chat_partner.profile.avatar_url }}{% else %}{{ request.user.profile.avatar_url }}{% endif %}";
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            if (!me) {
+              const from = document.createElement('div');
+              from.className = 'msg-from';
+              from.innerHTML = '<strong>@' + escapeHtml(sender) + '</strong>';
+              bubble.appendChild(from);
+            }
+            if (text) {
+              const tdiv = document.createElement('div');
+              tdiv.className = 'msg-text';
+              tdiv.innerHTML = escapeHtml(text);
+              bubble.appendChild(tdiv);
+            }
+            if (attachmentUrl) {
+              let media;
+              if (attachmentUrl.match(/\.(mp4|webm|mov)$/i)) {
+                media = document.createElement('video');
+                media.src = attachmentUrl;
+                media.controls = true;
+                media.className = 'msg-media';
+              } else {
+                media = document.createElement('img');
+                media.src = attachmentUrl;
+                media.className = 'msg-media';
+              }
+              bubble.appendChild(media);
+            }
+            const meta = document.createElement('div');
+            meta.className = 'msg-meta';
+            meta.innerHTML = '<small class="text-muted">' + new Date(createdAt).toLocaleString() + '</small>';
+            bubble.appendChild(meta);
+            row.appendChild(avatar);
+            row.appendChild(bubble);
+            const box = document.getElementById('messages');
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+          }
+          function escapeHtml(str){
+            const map={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'};
+            return String(str).replace(/[&<>"']/g,s=>map[s]);
+          }
+        </script>
+      {% else %}
+        <div class="text-center text-muted">Select a thread to start chatting.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+{% block title %}Create post{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px;">
+  <div class="card p-3 text-center">
+    <div class="display-6">🖼️</div>
+    <p>Drag photos and videos here</p>
+    <form method="post" enctype="multipart/form-data" class="text-start">
+      {% csrf_token %}
+      <div class="mb-2">{{ form.media }}</div>
+      <div class="mb-2">{{ form.caption }}</div>
+      <button class="btn btn-primary">Post</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

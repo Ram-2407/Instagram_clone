@@ -1,0 +1,37 @@
+{% extends 'core/base_auth.html' %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 480px;">
+  <div class="card p-4 shadow-sm">
+    <h4 class="mb-3 text-center">Log in</h4>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <!-- Username/email -->
+      <div class="mb-3">
+        <label for="id_username" class="form-label">Username or email</label>
+        <input id="id_username" class="form-control" name="username"
+               placeholder="Enter your username or email" required>
+      </div>
+
+      <!-- Password -->
+      <div class="mb-3">
+        <label for="id_password" class="form-label">Password</label>
+        <input id="id_password" class="form-control" type="password" name="password"
+               placeholder="Enter your password" required>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn btn-primary w-100">Log in</button>
+    </form>
+
+    <!-- Signup link -->
+    <div class="mt-3 text-center">
+      <span class="text-muted">No account?</span>
+      <a href="{% url 'signup' %}">Sign up</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'core/base.html' %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="card p-3">
+  <h5 class="mb-3">Activity</h5>
+
+  {% for item in notifs %}
+    {% with n=item.notif actor=item.actor post=item.post %}
+      <div class="d-flex gap-3 align-items-center border-bottom py-2">
+        <!-- Actor avatar -->
+        {% if actor %}
+          <img src="{{ actor.profile.avatar_url }}" class="rounded-circle"
+               style="width:40px;height:40px;object-fit:cover;" alt="@{{ actor.username }}">
+        {% else %}
+          <div class="rounded-circle bg-secondary"
+               style="width:40px;height:40px;" aria-label="No avatar"></div>
+        {% endif %}
+
+        <!-- Notification text -->
+        <div class="flex-grow-1">
+          <div>
+            {% if actor %}
+              <strong>@{{ actor.username }}</strong>
+            {% endif %}
+            {{ n.text }}
+          </div>
+          <small class="text-muted">{{ n.created_at|timesince }} ago</small>
+        </div>
+
+        <!-- Optional post preview -->
+        {% if post %}
+          <a href="{% url 'home' %}#post-{{ post.id }}" class="ms-auto">
+            {% if post.is_video %}
+              <video src="{{ post.media.url }}" muted playsinline
+                     style="width:40px;height:40px;object-fit:cover;border-radius:4px;"></video>
+            {% else %}
+              <img src="{{ post.media.url }}"
+                   style="width:40px;height:40px;object-fit:cover;border-radius:4px;" alt="">
+            {% endif %}
+          </a>
+        {% endif %}
+      </div>
+    {% endwith %}
+  {% empty %}
+    <p class="text-muted text-center my-3">No notifications yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Reset badge using helper from app.js
+  resetNotifBadge();
+</script>
+{% endblock %}

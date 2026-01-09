@@ -1,0 +1,44 @@
+{% extends 'core/base.html' %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-3"></div>
+  <div class="col-md-6">
+    <div class="card p-4 shadow-sm">
+      <!-- Centered search bar -->
+      <form method="get" class="mb-3">
+        <div class="input-group input-group-lg">
+          <input class="form-control" type="text" name="q" placeholder="Search users..."
+                 value="{{ q }}">
+          <button class="btn btn-primary" type="submit">Search</button>
+        </div>
+      </form>
+
+      <!-- Results -->
+      {% if q %}
+        {% if users and users.exists %}
+          <ul class="list-group">
+            {% for u in users %}
+              <li class="list-group-item d-flex align-items-center">
+                <img src="{{ u.profile.avatar_url }}" class="rounded-circle me-3"
+                     style="width:40px;height:40px;object-fit:cover;" alt="@{{ u.username }}">
+                <div>
+                  <strong>@{{ u.username }}</strong>
+                  {% if u.get_full_name %}
+                    <div class="text-muted">{{ u.get_full_name }}</div>
+                  {% endif %}
+                </div>
+                <a class="btn btn-sm btn-outline-primary ms-auto"
+                   href="{% url 'profile' u.username %}">View</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No users found.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-3"></div>
+</div>
+{% endblock %}

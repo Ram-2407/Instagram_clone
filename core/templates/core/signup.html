@@ -1,0 +1,51 @@
+{% extends 'core/base_auth.html' %}
+{% block title %}Sign up{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 480px;">
+  <div class="card p-4 shadow-sm">
+    <h4 class="mb-3 text-center">Create your account</h4>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      <!-- Username -->
+      <div class="mb-3">
+        <label for="id_username" class="form-label">Username</label>
+        <input id="id_username" class="form-control" name="username"
+               placeholder="Choose a username" required>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label for="id_email" class="form-label">Email</label>
+        <input id="id_email" class="form-control" name="email"
+               placeholder="Enter your email (optional)">
+      </div>
+
+      <!-- Password -->
+      <div class="mb-3">
+        <label for="id_password" class="form-label">Password</label>
+        <input id="id_password" class="form-control" type="password" name="password"
+               placeholder="Enter a password" required>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="mb-3">
+        <label for="id_confirm_password" class="form-label">Confirm Password</label>
+        <input id="id_confirm_password" class="form-control" type="password" name="confirm_password"
+               placeholder="Re-enter your password" required>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn btn-primary w-100">Sign up</button>
+    </form>
+
+    <!-- Login link -->
+    <div class="mt-3 text-center">
+      <span class="text-muted">Already have an account?</span>
+      <a href="{% url 'login' %}">Log in</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
