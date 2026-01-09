@@ -16,9 +16,13 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'replace-me-for-production'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-secret-key")
+DEBUG = os.environ.get("DEBUG", "False") == "True"
+
+
+# SECRET_KEY = 'replace-me-for-production'
+# DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'django.contrib.admin', 'django.contrib.auth', 'django.contrib.contenttypes',
@@ -96,3 +100,5 @@ else:
 # For reliable real-time behaviour (and when running multiple workers or
 # the Django autoreloader), run a Redis instance and set `REDIS_URL`, for
 # example `redis://127.0.0.1:6379/0`.
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
